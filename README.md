@@ -1,2 +1,2 @@
-# lint-cli
-自动生成eslint配置
+###
+### 自动生成ESlint配置

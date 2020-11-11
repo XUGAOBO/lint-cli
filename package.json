@@ -1,0 +1,64 @@
+{
+  "_from": "mtf.husky",
+  "_id": "mtf.husky@1.0.6",
+  "_inBundle": false,
+  "_integrity": "sha512-wjyT8P8hEynsHJQXX52likiFaTRyjhTygeNOAU78/16MHQdB+bitNen24Qql7mWc8UOEr254xOfTLPL6pPcRAA==",
+  "_location": "/mtf.husky",
+  "_phantomChildren": {},
+  "_requested": {
+    "type": "tag",
+    "registry": true,
+    "raw": "mtf.husky",
+    "name": "mtf.husky",
+    "escapedName": "mtf.husky",
+    "rawSpec": "",
+    "saveSpec": null,
+    "fetchSpec": "latest"
+  },
+  "_requiredBy": [
+    "#USER",
+    "/"
+  ],
+  "_resolved": "https://registry.npmjs.org/mtf.husky/-/mtf.husky-1.0.4.tgz",
+  "_shasum": "11e813433918faf114cb8f6cf17a81d762bc03f8",
+  "_spec": "mtf.husky",
+  "_where": "/Users/xugaobo/Documents/test",
+  "author": {
+    "name": "gaobo"
+  },
+  "bin": {
+    "mtf-husky": "./bin/run.js"
+  },
+  "bundleDependencies": false,
+  "dependencies": {
+    "chalk": "^3.0.0",
+    "commander": "^5.0.0",
+    "cross-spawn": "^7.0.1",
+    "debug": "^4.1.1",
+    "inquirer": "^7.1.0"
+  },
+  "deprecated": false,
+  "description": "",
+  "engines": {
+    "node": ">=8.12.0"
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "lint-staged"
+    }
+  },
+  "license": "ISC",
+  "lint-staged": {
+    "src/**/*.{js,jsx}": [
+      "eslint --fix",
+      "git add"
+    ]
+  },
+  "main": "./src/index.js",
+  "name": "mtf.husky",
+  "scripts": {
+    "start": "node src/index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "version": "1.1.0"
+}
