@@ -16,13 +16,49 @@ const common_modules = ['eslint@7.5.0', 'eslint-config-airbnb@18.2.0', 'eslint-c
 const js_modules = common_modules.concat(['babel-eslint@10.1.0']);
 const ts_modules = common_modules.concat(['@typescript-eslint/eslint-plugin@3.7.1', '@typescript-eslint/parser@3.7.1']);
 
+(function() {
+  if (typeof Object.assign !== 'function') {
+    // Must be writable: true, enumerable: false, configurable: true
+    Object.defineProperty(Object, "assign", {
+      value: function assign(target, varArgs) { // .length of function is 2
+        'use strict';
+        if (target === null || target === undefined) {
+          throw new TypeError('Cannot convert undefined or null to object');
+        }
+  
+        var to = Object(target);
+  
+        for (var index = 1; index < arguments.length; index++) {
+          var nextSource = arguments[index];
+  
+          if (nextSource !== null && nextSource !== undefined) { 
+            for (var nextKey in nextSource) {
+              // Avoid bugs when hasOwnProperty is shadowed
+              if (Object.prototype.hasOwnProperty.call(nextSource, nextKey)) {
+                to[nextKey] = nextSource[nextKey];
+              }
+            }
+          }
+        }
+        return to;
+      },
+      writable: true,
+      configurable: true
+    });
+  }
+}());
+
+function getModules(type) {
+  return type === type_enum.js ? js_modules : ts_modules;
+}
+
 // 查找package.json文件是否存在
 const packageJsonPath = utils.findPackageJson(rootDir);
 if (!packageJsonPath) {
   console.log(chalk.red('找不到package.json文件!'));
   return;
 }
-console.log(chalk.green('开始...'));
+console.log(chalk.green('lint检测...'));
 
 // 判断是否配置eslint规范
 // 参照https://cn.eslint.org/docs/user-guide/configuring配置规则
@@ -35,8 +71,8 @@ function hasEslintConfig() {
   // 判断根目录下面是否存在eslint配置文件
   fs.readdirSync(rootDir).forEach((name) => {
     if (fs.statSync(`${rootDir}/${name}`)) {
-      const basename = path.basename(name);
       const extname = path.extname(name);
+      const basename = path.basename(name, extname);
       if (basename === '.eslintrc' && extnameList.indexOf(extname.toLowerCase()) > -1) {
         hasEslint = true;
       }
@@ -48,46 +84,55 @@ function hasEslintConfig() {
 // 安装eslint依赖包
 function installModules(type) {
   console.log(chalk.green('正在安装...'));
-  const modules = type === type_enum.js ? js_modules : ts_modules;
-  utils.installSyncSaveDev(modules);
+  utils.installSyncSaveDev(getModules(type));
 }
 
 // 拷贝eslint配置文件
 function copyRulesConfig(type) {
   const rulesPath = path.join(__filename, '../../lib/' + type + '/');
-  console.log('rulesPath', rulesPath);
   spawn.sync('cp', ['-r', rulesPath, process.cwd()]);
 }
 
 // 修改package.json文件
-function modifyPackageJson() {
+function modifyPackageJson(projectType) {
   const config = require(packageJsonPath);
-  if (!config.husky) {
-    config.husky = {
-      hooks: {
-        'pre-commit': 'lint-staged',
-      },
-    };
+  config.husky = {
+    hooks: {
+      'pre-commit': 'lint-staged',
+    },
+  };
+  config['lint-staged'] = {
+    'app/**/*.{js,jsx,ts,tsx,json,css,scss,md}': [
+      'eslint --fix',
+      'prettier --write',
+      'git add',
+    ],
+  };
+  config['prettier'] = {
+    "singleQuote": true,
+    "printWidth": 120,
+    "trailingComma": "all",
+    "tabWidth": 2,
+    "jsxBracketSameLine": false,
+    "jsxSingleQuote": false
+  };
+  if (!config['devDependencies']) {
+    config['devDependencies'] = {}
   }
-  if (!config['lint-staged']) {
-    config['lint-staged'] = {
-      'app/**/*.{js,jsx,ts,tsx,json,css,scss,md}': [
-        'eslint --fix',
-        'prettier --write',
-        'git add',
-      ],
-    };
+  const modules = getModules(projectType);
+
+  for(var i = 0; i < modules.length; i++) {
+    var item = modules[i];
+    var moduleArr = item.split('@');
+    config['devDependencies'][moduleArr[0]] = '^'+ moduleArr[1];
+
   }
-  if (!config['prettier']) {
-    config['prettier'] = {
-      "singleQuote": true,
-      "printWidth": 120,
-      "trailingComma": "all",
-      "tabWidth": 2,
-      "jsxBracketSameLine": false,
-      "jsxSingleQuote": false
-    };
+
+  if (!config['scripts']) {
+    config['scripts'] = {}
   }
+  config['scripts']['block-lint'] = './node_modules/.bin/block-lint';
+
   const fd = fs.openSync(packageJsonPath, 'w');
   fs.writeFileSync(packageJsonPath, JSON.stringify(config, null, 2), 'utf8');
   fs.closeSync(fd);
@@ -113,11 +158,10 @@ inquirer.prompt([
     },
   }
 ]).then((answers) => {
-  console.error('answers', answers);
   const { projectType, executeInstallation } = answers;
   if (executeInstallation || executeInstallation === undefined) {
     installModules(projectType);
     copyRulesConfig(projectType);
-    modifyPackageJson();
+    modifyPackageJson(projectType);
   }
 });
