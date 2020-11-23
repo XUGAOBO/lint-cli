@@ -103,7 +103,6 @@ function modifyPackageJson(projectType) {
   };
   config['lint-staged'] = {
     'app/**/*.{js,jsx,ts,tsx,json,css,scss,md}': [
-      'eslint --fix',
       'prettier --write',
       'git add',
     ],
